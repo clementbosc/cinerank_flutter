@@ -18,93 +18,92 @@ class PeopleView extends StatelessWidget {
           title: Text(this.people.name),
           backgroundColor: primaryColor,
         ),
-        body: Container(child: _mainContent(people)));
+        body: _body());
   }
-}
 
-Widget _mainContent(People people) {
-  return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-    return SingleChildScrollView(
-        child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(15),
-                    child: Image.network(
-                        people.profile_path != null
-                            ? "https://image.tmdb.org/t/p/w500" +
-                                people.profile_path
-                            : defaultPoster,
-                        width: 200),
+  _body() {
+    return FutureBuilder<People>(
+        future: fetchPeople(this.people.id, fetchCredits: true),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            People people_full = snapshot.data;
+            return Container(
+                //padding: EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    colorFilter: new ColorFilter.mode(
+                        Colors.black.withOpacity(0.5), BlendMode.srcATop),
+                    image: NetworkImage(people_full.backdropPath != null
+                        ? "https://image.tmdb.org/t/p/w1280" +
+                            people_full.backdropPath
+                        : defaultBackground),
+                    fit: BoxFit.cover,
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.all(15),
-                  child: Text(people.name,
-                      style: TextStyle(
-                          color: Colors.black87,
-                          fontSize: 35,
-                          fontWeight: FontWeight.bold)),
-                ),
-                FutureBuilder<People>(
-                  future: fetchPeople(people.id),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      People people_full = snapshot.data;
-                      return Column(
+                child: _mainContent(people_full));
+          } else if (snapshot.hasError) {
+            return Text("${snapshot.error}",
+                style: TextStyle(color: Colors.black87));
+          }
+
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        });
+  }
+
+  Widget _mainContent(People people_full) {
+    return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+      return SingleChildScrollView(
+          child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(15),
+                      child: Image.network(
+                          people.profile_path != null
+                              ? "https://image.tmdb.org/t/p/w500" +
+                                  people.profile_path
+                              : defaultPoster,
+                          width: 200),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(15),
+                    child: Text(people.name,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 35,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 15, right: 15, bottom: 15),
+                        child: Text(people_full.biography,
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 18)),
+                      ),
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Padding(
-                            padding: const EdgeInsets.only(
-                                left: 15, right: 15, bottom: 15),
-                            child: Text(people_full.biography,
-                                style: TextStyle(
-                                    color: Colors.black87, fontSize: 18)),
-                          ),
-                          FutureBuilder<People>(
-                            future: fetchCredits(people),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData) {
-                                People people_with_cast = snapshot.data;
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    _displayMovies(people_with_cast, context)
-                                  ],
-                                );
-                              } else if (snapshot.hasError) {
-                                return Text("${snapshot.error}",
-                                    style: TextStyle(color: Colors.black87));
-                              }
-
-                              // By default, show a loading spinner.
-                              return Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            },
-                          )
+                          _displayMovies(people_full, context)
                         ],
-                      );
-                    } else if (snapshot.hasError) {
-                      return Text("${snapshot.error}",
-                          style: TextStyle(color: Colors.black87));
-                    }
-
-                    // By default, show a loading spinner.
-                    return Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  },
-                )
-              ],
-            )));
-  });
+                      )
+                    ],
+                  )
+                ],
+              )));
+    });
+  }
 }
 
 Widget _displayMovies(People people, BuildContext context) {
@@ -122,7 +121,12 @@ Widget _displayMovies(People people, BuildContext context) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => MovieView(backdropPath: movie.backdropPath, posterPath: movie.posterPath, name: movie.title, tmdbMovieId: movie.id,)),
+                        builder: (context) => MovieView(
+                              backdropPath: movie.backdropPath,
+                              posterPath: movie.posterPath,
+                              name: movie.title,
+                              tmdbMovieId: movie.id,
+                            )),
                   );
                 },
                 child: Card(
@@ -141,7 +145,7 @@ Widget _displayMovies(People people, BuildContext context) {
                                 child: Image.network(
                                     movie.posterPath != null
                                         ? "https://image.tmdb.org/t/p/w500" +
-                                        movie.posterPath
+                                            movie.posterPath
                                         : defaultPoster,
                                     fit: BoxFit.cover)),
                             //),

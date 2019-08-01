@@ -22,6 +22,7 @@ class People {
   final String homepage;
   final String movies;
   final String backdrop;
+  String backdropPath;
   List<TmdbMovie> casted_in;
   List<TmdbMovie> crewed_in;
 
@@ -41,7 +42,9 @@ class People {
       this.imdb_id,
       this.homepage,
       this.movies,
-      this.backdrop}){
+      this.backdrop,
+
+        this.backdropPath}){
     this.casted_in = new List<TmdbMovie>();
     this.crewed_in = new List<TmdbMovie>();
   }
@@ -67,37 +70,43 @@ class People {
   }
 }
 
-Future<People> fetchPeople(int peopleId) async {
+Future<People> fetchPeople(int peopleId, {bool fetchCredits: false}) async {
+  People people;
   final people_request_url = 'https://api.themoviedb.org/3/person/' +
       peopleId.toString() +
       '?api_key=' +
       tmdb_api_key;
   var response = await http.get(people_request_url);
   if (response.statusCode == 200) {
-    return People.fromJson(json.decode(response.body));
+    people = People.fromJson(json.decode(response.body));
   } else {
     // If that call was not successful, throw an error.
     throw Exception('Failed to load people');
   }
-}
 
-Future<People> fetchCredits(People people) async {
-  final people_request_url = 'https://api.themoviedb.org/3/person/' +
-      people.id.toString() +
-      '/movie_credits?api_key=' +
-      tmdb_api_key;
-  var response = await http.get(people_request_url);
-  if (response.statusCode == 200) {
-    final res_json = json.decode(response.body);
-    for (var cast in res_json['cast']){
-      people.casted_in.add(TmdbMovie.fromJson(cast));
+  if (fetchCredits){
+    final people_request_url = 'https://api.themoviedb.org/3/person/' +
+        people.id.toString() +
+        '/movie_credits?api_key=' +
+        tmdb_api_key;
+    var response = await http.get(people_request_url);
+    if (response.statusCode == 200) {
+      final res_json = json.decode(response.body);
+      for (var cast in res_json['cast']){
+        people.casted_in.add(TmdbMovie.fromJson(cast));
+      }
+      for (var crew in res_json['crew']){
+        people.crewed_in.add(TmdbMovie.fromJson(crew));
+      }
+    } else {
+      // If that call was not successful, throw an error.
+      throw Exception('Failed to load people');
     }
-    for (var crew in res_json['crew']){
-      people.crewed_in.add(TmdbMovie.fromJson(crew));
+    if (people.casted_in.isNotEmpty){
+      people.backdropPath = people.casted_in.first.backdropPath;
     }
-  } else {
-    // If that call was not successful, throw an error.
-    throw Exception('Failed to load people');
   }
+
   return people;
 }
+
