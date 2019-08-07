@@ -46,7 +46,6 @@ class MovieView extends StatelessWidget {
     return Scaffold(
         appBar: AppBar(
           title: Text(this.name),
-          backgroundColor: primaryColor,
         ),
         body: Container(
             //padding: EdgeInsets.all(15),

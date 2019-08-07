@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'home.dart';
-import 'models/movie.dart';
 
 const primaryColor = Colors.black87;
 const defaultBackground =
@@ -14,9 +13,13 @@ const defaultBackground =
 const defaultPoster =
     "https://images-na.ssl-images-amazon.com/images/I/A1t8xCe9jwL._SL1500_.jpg";
 
+final theme_data = ThemeData(
+//brightness: Brightness.dark,
+  primaryColor: Colors.grey[850],
+  accentColor: Colors.cyan[600],
+);
 
-
-void main(){
+void main() {
   initializeDateFormatting();
-  return runApp(Home(movies: fetchMovies()));
+  return runApp(Home());
 }

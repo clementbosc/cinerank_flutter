@@ -1,48 +1,106 @@
+import 'package:Cinerank/sharedPreferencesHelper.dart';
 import 'package:flutter/material.dart';
 
 import 'main.dart';
+import 'models/cinema.dart';
 import 'models/movie.dart';
 import 'movieView.dart';
 
 class Home extends StatelessWidget {
-  final Future<List<Movie>> movies;
-
-  Home({Key key, this.movies}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Cinerank',
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            'Cinerank 🎬',
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: primaryColor,
-        ),
-        body: Container(
-          child: FutureBuilder<List<Movie>>(
-            future: movies,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                return ListView.builder(
-                    itemCount: snapshot.data.length,
-                    itemBuilder: (context, index) {
-                      Movie movie = snapshot.data[index];
-                      return _buildMovieRow(movie, context);
-                    });
-              } else if (snapshot.hasError) {
-                return Text("${snapshot.error}",
-                    style: TextStyle(color: Colors.black87));
-              }
+        title: 'Cinerank', theme: theme_data, home: RefreshFutureBuilder());
+  }
+}
 
-              // By default, show a loading spinner.
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            },
-          ),
+class RefreshFutureBuilder extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() => _RefreshFutureBuilderState();
+}
+
+class _RefreshFutureBuilderState extends State<RefreshFutureBuilder> {
+  Future<List<Movie>> movies;
+  String preferedCinema = "";
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferencesHelper.getPreferedCinema().then((cinema){
+      setState(() {
+        preferedCinema = cinema;
+        movies = fetchMovies(cinema: preferedCinema);
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Cinerank 🎬',
+          style: TextStyle(color: Colors.white),
+        ),
+        //backgroundColor: primaryColor,
+      ),
+      drawer: Drawer(
+        child: FutureBuilder<List<Cinema>>(
+          future: fetchCinemas(),
+          builder: (BuildContext context, AsyncSnapshot snapshot) {
+            if (snapshot.hasData) {
+              return ListView.builder(
+                  itemCount: snapshot.data.length,
+                  itemBuilder: (context, index) {
+                    Cinema cinema = snapshot.data[index];
+                    //return _chooseCinemaRow(cinema, context);
+                    return ListTileTheme(
+                        selectedColor: theme_data.accentColor,
+                        child: ListTile(
+                          selected: preferedCinema == cinema.id ? true : false,
+                          title: Text(cinema.name),
+                          onTap: () async {
+                            await SharedPreferencesHelper.setPreferedCinema(
+                                cinema.id);
+                            setState(() {
+                              preferedCinema = cinema.id;
+                              movies = fetchMovies(cinema: cinema.id);
+                            });
+                            Navigator.of(context).pop();
+                          },
+                        ));
+                  });
+            } else if (snapshot.hasError) {
+              return Text("${snapshot.error}",
+                  style: TextStyle(color: Colors.black87));
+            }
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          },
+        ),
+      ),
+      body: Container(
+        child: FutureBuilder<List<Movie>>(
+          future: movies,
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              return ListView.builder(
+                  itemCount: snapshot.data.length,
+                  itemBuilder: (context, index) {
+                    Movie movie = snapshot.data[index];
+                    return _buildMovieRow(movie, context);
+                  });
+            } else if (snapshot.hasError) {
+              return Text("${snapshot.error}",
+                  style: TextStyle(color: Colors.black87));
+            }
+
+            // By default, show a loading spinner.
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          },
         ),
       ),
     );

@@ -16,7 +16,6 @@ class PeopleView extends StatelessWidget {
     return Scaffold(
         appBar: AppBar(
           title: Text(this.people.name),
-          backgroundColor: primaryColor,
         ),
         body: _body());
   }

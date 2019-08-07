@@ -40,9 +40,9 @@ class Movie {
   }
 }
 
-Future<List<Movie>> fetchMovies() async {
+Future<List<Movie>> fetchMovies({cinema: "cinema-gaumont-wilson"}) async {
   final response =
-      await http.get('https://cinerank-cloud.appspot.com/get_rates');
+      await http.get('https://cinerank-cloud.appspot.com/cinemas/'+cinema+'/rates');
   if (response.statusCode == 200) {
     List<Movie> movies = new List();
     // If the call to the server was successful, parse the JSON.
