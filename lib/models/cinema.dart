@@ -37,3 +37,14 @@ Future<List<Cinema>> fetchCinemas() async {
     throw Exception('Failed to load cinemas');
   }
 }
+
+Future<Cinema> fetchCinema(cine_id) async {
+  final response =
+  await http.get('https://cinerank-cloud.appspot.com/cinemas/'+cine_id);
+  if (response.statusCode == 200) {
+    return Cinema.fromJson(json.decode(response.body));
+  } else {
+    // If that call was not successful, throw an error.
+    throw Exception('Failed to load cinema '+cine_id);
+  }
+}

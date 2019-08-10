@@ -13,6 +13,7 @@ class Movie {
   final String posterPath;
   final double score;
   Map<String, double> rates;
+  List<dynamic> seances;
 
   Movie(
       {this.name,
@@ -23,7 +24,9 @@ class Movie {
       this.backdropPath,
       this.posterPath,
       this.score,
-      this.rates});
+      this.rates}){
+    this.seances = new List<dynamic>();
+  }
 
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
@@ -40,18 +43,41 @@ class Movie {
   }
 }
 
-Future<List<Movie>> fetchMovies({cinema: "cinema-gaumont-wilson"}) async {
-  final response =
+Future<List<Movie>> fetchMovies({cinema: "cinema-gaumont-wilson", with_seances: false}) async {
+  var response =
       await http.get('https://cinerank-cloud.appspot.com/cinemas/'+cinema+'/rates');
   if (response.statusCode == 200) {
     List<Movie> movies = new List();
     // If the call to the server was successful, parse the JSON.
     for (var movie in json.decode(response.body)['movies']) {
-      movies.add(Movie.fromJson(movie));
+      Movie m = Movie.fromJson(movie);
+      if (with_seances){
+        response = await http.get('https://cinerank-cloud.appspot.com/cinemas/'+cinema+'/movies/'+m.gaumontId+'/showtimes');
+        if (response.statusCode == 200) {
+          m.seances = new List<dynamic>.from(json.decode(response.body));
+        }else {
+          // If that call was not successful, throw an error.
+          throw Exception('Failed to load movie showtimes for'+m.gaumontId);
+        }
+      }
+
+      movies.add(m);
     }
     return movies;
   } else {
     // If that call was not successful, throw an error.
     throw Exception('Failed to load movies');
+  }
+}
+
+Future<List<dynamic>> fetchMovieShowtime(String cinema, String film_id) async {
+  var response =
+  await await http.get('https://cinerank-cloud.appspot.com/cinemas/'+cinema+'/movies/'+film_id+'/showtimes');
+  if (response.statusCode == 200) {
+    // If the call to the server was successful, parse the JSON.
+    return new List<dynamic>.from(json.decode(response.body) as List);
+  } else {
+    // If that call was not successful, throw an error.
+    throw Exception('Failed to load movie showtimes for '+film_id);
   }
 }

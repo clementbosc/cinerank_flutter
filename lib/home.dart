@@ -89,7 +89,7 @@ class _RefreshFutureBuilderState extends State<RefreshFutureBuilder> {
                   itemCount: snapshot.data.length,
                   itemBuilder: (context, index) {
                     Movie movie = snapshot.data[index];
-                    return _buildMovieRow(movie, context);
+                    return _buildMovieRow(movie, context, preferedCinema);
                   });
             } else if (snapshot.hasError) {
               return Text("${snapshot.error}",
@@ -107,12 +107,12 @@ class _RefreshFutureBuilderState extends State<RefreshFutureBuilder> {
   }
 }
 
-StatelessWidget _buildMovieRow(Movie movie, BuildContext context) {
+StatelessWidget _buildMovieRow(Movie movie, BuildContext context, String preferedCinema) {
   return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => MovieView(movie: movie)),
+          MaterialPageRoute(builder: (context) => MovieView(movie: movie, preferedCinema: preferedCinema)),
         );
       },
       child: Container(

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import 'bookingView.dart';
 import 'main.dart';
 
+import 'models/cinema.dart';
 import 'models/movie.dart';
 import 'models/people.dart';
 import 'models/tmdbMovie.dart';
@@ -14,6 +17,7 @@ class MovieView extends StatelessWidget {
   String posterPath;
   Movie movie;
   TmdbMovie tmdbMovie;
+  String preferedCinema;
 
   MovieView(
       {Key key,
@@ -22,7 +26,8 @@ class MovieView extends StatelessWidget {
       this.backdropPath,
       this.posterPath,
       this.movie,
-      this.tmdbMovie}) {
+      this.tmdbMovie,
+      this.preferedCinema}) {
     if ((this.backdropPath == null || this.posterPath == null) &&
         this.movie != null) {
       this.backdropPath = this.movie.backdropPath;
@@ -97,7 +102,8 @@ class MovieView extends StatelessWidget {
                           future: fetchTmdbMovie(this.tmdbMovieId),
                           builder: (context, snapshot) {
                             if (snapshot.hasData) {
-                              return _movieInfos(snapshot.data, context);
+                              return _movieInfos(snapshot.data, context,
+                                  this.movie, this.preferedCinema);
                             } else if (snapshot.hasError) {
                               return Text("${snapshot.error}",
                                   style: TextStyle(color: Colors.white));
@@ -107,14 +113,16 @@ class MovieView extends StatelessWidget {
                                     backgroundColor: Colors.white));
                           },
                         ))
-                      : _movieInfos(this.tmdbMovie, context))
+                      : _movieInfos(this.tmdbMovie, context, this.movie,
+                          this.preferedCinema))
                 ],
               )));
     });
   }
 }
 
-Widget _movieInfos(TmdbMovie tmdbMovie, BuildContext context) {
+Widget _movieInfos(TmdbMovie tmdbMovie, BuildContext context, Movie movie,
+    String preferedCinema) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: <Widget>[
@@ -139,6 +147,31 @@ Widget _movieInfos(TmdbMovie tmdbMovie, BuildContext context) {
           ],
         ),
       ),
+      (movie == null || preferedCinema == null
+          ? Container()
+          : (FutureBuilder<List<dynamic>>(
+              future: fetchMovieShowtime(preferedCinema, movie.gaumontId),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return FutureBuilder<Cinema>(
+                    future: fetchCinema(preferedCinema),
+                    builder: (context, cine_snapshot) {
+                      if (cine_snapshot.hasData) {
+                        return _displaySeances("Séances au "+cine_snapshot.data.name, snapshot.data, context);
+                      }
+                      return _displaySeances("Séances", snapshot.data, context);
+                    },
+                  );
+
+                } else if (snapshot.hasError) {
+                  return Text("${snapshot.error}",
+                      style: TextStyle(color: Colors.white));
+                }
+                return Center(
+                    child: CircularProgressIndicator(
+                        backgroundColor: Colors.white));
+              },
+            ))),
       Padding(
           padding: EdgeInsets.only(top: 20, left: 15, right: 15),
           child: Text("Acteurs",
@@ -147,6 +180,58 @@ Widget _movieInfos(TmdbMovie tmdbMovie, BuildContext context) {
                   fontSize: 25,
                   fontWeight: FontWeight.bold))),
       _displayPeoples(tmdbMovie, context)
+    ],
+  );
+}
+
+_displaySeances(String title, List<dynamic> seances, BuildContext context) {
+  seances.sort((a, b) => a['time'].compareTo(b['time']));
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: <Widget>[
+      Padding(
+          padding: EdgeInsets.only(top: 20, left: 15, right: 15),
+          child: Text(title,
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold))),
+      Container(
+          height: 73,
+          margin: EdgeInsets.only(top: 5, bottom: 10),
+          child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: seances.length,
+              itemBuilder: (context, index) {
+                dynamic seance = seances[index];
+                return GestureDetector(
+                    onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    BookingView(seance['refCmd'])),
+                          );
+                        },
+                    child: Card(
+                        child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        children: <Widget>[
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 5),
+                            child: Text(new DateFormat('dd/MM H:m', 'fr_FR')
+                                .format(DateTime.parse(seance['time']))),
+                          ),
+                          Text(
+                            (seance['version'].toString()+' '+(seance['tags'] as List).where((f) => f == 'dolby' || f == '3d').toList().join(' ')).toUpperCase(),
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    )));
+              }))
     ],
   );
 }
